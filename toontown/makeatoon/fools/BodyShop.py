@@ -125,9 +125,6 @@ class BodyShop(StateData.StateData):
         self.__updateScrollButtons(self.typeChoice, length, self.typeStart, self.speciesLButton, self.speciesRButton)
         suitType = SuitDNA.suitHeadTypes[self.typeChoice]
         self.__changeTypeName(suitType)
-        # Make sure swapping doesn't keep cogs tinted
-        if self.dna.name in ['sf', 'sms', 'smc', 'smp']:
-            self.toon.getGeomNode().clearColor()
         # Change suit type
         self.dna.name = suitType
         # And finally, change the department

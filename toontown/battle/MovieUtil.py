@@ -191,10 +191,6 @@ def insertReviveSuit(suit, deathSuit, battle = None, pos = None, hpr = None):
 
 def removeReviveSuit(suit, deathSuit):
     notify.debug('removeDeathSuit()')
-    # Remove color from Smokin' Cog v2
-    # skelecog so he looks like a regular skelecog
-    if suit.style.name in ['sf', 'sms', 'smc', 'smp']:
-        suit.getGeomNode().clearColor()
     suit.isSkeleRevive = 0
     suit.setSkelecog(1)
     suit.show()

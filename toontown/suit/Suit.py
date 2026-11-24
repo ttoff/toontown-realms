@@ -229,7 +229,6 @@ class Suit(Avatar.Avatar):
         self.isWaiter = 0
         self.isRental = 0
         self.isSkeleRevive = 0
-        self.isCustomCog = 0
         self.particleEffect = None
         self.prop = None
         self.propInSound = None
@@ -676,8 +675,6 @@ class Suit(Avatar.Avatar):
                 filePrefix, phase = ModelDict[body]
                 loseAnim = f'phase_{phase}{filePrefix}lose'
                 self.loseActor = Actor.Actor(loseModel, {'lose': loseAnim})
-                if self.isCustomCog:
-                    self.handleCustomCogLoseActor()
                 self.generateCorporateTie(self.loseActor)
                 self.loseActor.getGeomNode().setColorScale(VBase4(self.appearance[CogAppearanceIndex.SKELETON_COLOR_SCALE]))
             else:
@@ -694,8 +691,6 @@ class Suit(Avatar.Avatar):
                     self.makeWaiter(self.loseActor)
                 elif self.isRental:
                     self.makeRentalSuit(self.style.dept, self.loseActor)
-                elif self.isCustomCog:
-                    self.handleCustomCogLoseActor()
                 else:
                     self.setSuitClothes(self.loseActor, True)
 
@@ -731,15 +726,6 @@ class Suit(Avatar.Avatar):
             self.notify.debug('cleanupLoseActor() - got one')
             self.loseActor.delete()
         self.loseActor = None
-
-    def handleCustomCogLoseActor(self):
-        if self.style.name in ['sf', 'sms', 'smc', 'smp']:
-            # Make sure v2 skelecog lose actor isn't this color
-            # to match w/ the actual cog
-            cigar = self.find('**/suit_cigar')
-            if cigar:
-                cigar.reparentTo(self.loseActor.find('**/joint_head'))
-            self.cleanupParticleEffect()
 
     def makeSkeleton(self):
         model = f'phase_5/models/char/cog{"ABC"[self.appearance[CogAppearanceIndex.BODY_TYPE]]}_robot-zero'
@@ -839,27 +825,6 @@ class Suit(Avatar.Avatar):
 
     def makeSkeleRevive(self):
         self.isSkeleRevive = 1
-
-    # TODO: make cigar emit particles for all cogs who have it attached
-    def makeCustomCog(self, suitName):
-        if suitName in ['sf', 'sms', 'smc', 'smp']:
-            self.makeSkeleton()
-            global ParticleRefCount
-            cigar = loader.loadModel('phase_5/models/props/cigar')
-            cigar.setName('suit_cigar')
-            cigar.reparentTo(self.find('**/to_head'))
-            cigar.setPosHprScale(-.4, 1, .15, 26.57, 0, 254.05, 8, 8, 8)
-            base.enableParticles()
-            smoke = BattleParticles.loadParticleFile('cigar.ptf')
-            smoke.setPosHprScale(0.02, 0.01, 0.01, 0.00, 0.00, 110.00, 0.02, 0.02, 0.02)
-            smoke.reparentTo(cigar)
-            self.particleEffect = smoke
-            global ParticleList
-            ParticleList.append(smoke)
-            if ParticleRefCount < ParticleThreshold:
-                smoke.enable()
-                ParticleRefCount += 1
-        self.isCustomCog = 1
 
     def getHeadParts(self):
         return self.headParts
