@@ -17,9 +17,8 @@
     "name_plural": "#SuitHeadHonchoP",
     "hand_color": [0.95, 0.75, 0.75, 1.0],
     "quote_sets": [
-        "tbc",
+        "head_honcho",
         "default_brushoffs",
-        "default_cog_building_boss_taunts",
         "default_country_club_boss_taunts",
         "default_country_club_boss_minion_taunts",
         "default_explode",

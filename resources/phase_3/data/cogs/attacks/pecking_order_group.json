@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:pecking_order_group",
+    "display_name": "#CogAttackPeckingOrder",
+    "animation": "throw-object",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:pecking_order"
+    ]
+}

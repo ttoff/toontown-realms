@@ -55,7 +55,7 @@ def doSquirts(squirts):
         skip = 0
         if skip:
             pass
-        elif type(squirt['target']) == type([]):
+        else:
             if 1:
                 target = squirt['target'][0]
                 suitId = target['suit'].doId
@@ -63,12 +63,6 @@ def doSquirts(squirts):
                     suitSquirtsDict[suitId].append(squirt)
                 else:
                     suitSquirtsDict[suitId] = [squirt]
-        else:
-            suitId = squirt['target']['suit'].doId
-            if suitId in suitSquirtsDict:
-                suitSquirtsDict[suitId].append(squirt)
-            else:
-                suitSquirtsDict[suitId] = [squirt]
 
     suitSquirts = list(suitSquirtsDict.values())
 
@@ -102,17 +96,12 @@ def __doSuitSquirts(squirts, npcs):
     uberClone = 0
     toonTracks = Parallel()
     delay = 0.0
-    if type(squirts[0]['target']) == type([]):
-        for target in squirts[0]['target']:
-            if len(squirts) == 1 and target['hp'] > 0:
-                fShowStun = 1
-            else:
-                fShowStun = 0
+    for target in squirts[0]['target']:
+        if len(squirts) == 1 and target['hp'] > 0:
+            fShowStun = 1
+        else:
+            fShowStun = 0
 
-    elif len(squirts) == 1 and squirts[0]['target']['hp'] > 0:
-        fShowStun = 1
-    else:
-        fShowStun = 0
     for s in squirts:
         tracks = __doSquirt(s, delay, fShowStun, npcs, uberClone)
         if s['level'] >= ToontownBattleGlobals.UBER_GAG_LEVEL_INDEX:
@@ -131,18 +120,12 @@ def __doSquirt(squirt, delay, fShowStun, npcs, uberClone = 0):
     if 'npc' in squirt:
         toon = squirt['npc']
     squirtSequence = Sequence(Wait(delay))
-    if type(squirt['target']) == type([]):
-        for target in squirt['target']:
-            notify.debug('toon: %s squirts prop: %d at suit: %d for hp: %d' % (toon.getName(),
-             squirt['level'],
-             target['suit'].doId,
-             target['hp']))
-
-    else:
+    for target in squirt['target']:
         notify.debug('toon: %s squirts prop: %d at suit: %d for hp: %d' % (toon.getName(),
          squirt['level'],
-         squirt['target']['suit'].doId,
-         squirt['target']['hp']))
+         target['suit'].doId,
+         target['hp']))
+
     if uberClone:
         ival = squirtfn_array[squirt['level']](squirt, delay, fShowStun, npcs, uberClone)
         if ival:
@@ -281,17 +264,17 @@ def doFlower(squirt, delay, fShowStun, npcs=None):
     level = squirt['level']
     hpbonus = squirt['hpbonus']
     target = squirt['target']
-    suit = target['suit']
+    suit = target[0]['suit']
     if not hasattr(suit, 'updateHealthBar'):
-        suitGeom = target['suitGeom']
+        suitGeom = target[0]['suitGeom']
     else:
         suitGeom = suit
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
+    hp = target[0]['hp']
+    kbbonus = target[0]['kbbonus']
+    died = target[0]['died']
+    revived = target[0]['revived']
+    leftSuits = target[0]['leftSuits']
+    rightSuits = target[0]['rightSuits']
     battle = squirt['battle']
 
     button = globalPropPool.getProp('button')
@@ -388,13 +371,13 @@ def __doWaterGlass(squirt, delay, fShowStun, npcs):
     level = squirt['level']
     hpbonus = squirt['hpbonus']
     target = squirt['target']
-    suit = target['suit']
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
+    suit = target[0]['suit']
+    hp = target[0]['hp']
+    kbbonus = target[0]['kbbonus']
+    died = target[0]['died']
+    revived = target[0]['revived']
+    leftSuits = target[0]['leftSuits']
+    rightSuits = target[0]['rightSuits']
     battle = squirt['battle']
 
     hitSuit = hp > 0
@@ -545,13 +528,13 @@ def __doWaterGun(squirt, delay, fShowStun, npcs):
     level = squirt['level']
     hpbonus = squirt['hpbonus']
     target = squirt['target']
-    suit = target['suit']
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
+    suit = target[0]['suit']
+    hp = target[0]['hp']
+    kbbonus = target[0]['kbbonus']
+    died = target[0]['died']
+    revived = target[0]['revived']
+    leftSuits = target[0]['leftSuits']
+    rightSuits = target[0]['rightSuits']
     battle = squirt['battle']
 
     suitPos = suit.getPos(battle)
@@ -653,13 +636,13 @@ def __doSeltzerBottle(squirt, delay, fShowStun, npcs):
     level = squirt['level']
     hpbonus = squirt['hpbonus']
     target = squirt['target']
-    suit = target['suit']
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
+    suit = target[0]['suit']
+    hp = target[0]['hp']
+    kbbonus = target[0]['kbbonus']
+    died = target[0]['died']
+    revived = target[0]['revived']
+    leftSuits = target[0]['leftSuits']
+    rightSuits = target[0]['rightSuits']
     battle = squirt['battle']
 
     suitPos = suit.getPos(battle)
@@ -770,13 +753,13 @@ def __doFireHose(squirt, delay, fShowStun, npcs):
     level = squirt['level']
     hpbonus = squirt['hpbonus']
     target = squirt['target']
-    suit = target['suit']
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
+    suit = target[0]['suit']
+    hp = target[0]['hp']
+    kbbonus = target[0]['kbbonus']
+    died = target[0]['died']
+    revived = target[0]['revived']
+    leftSuits = target[0]['leftSuits']
+    rightSuits = target[0]['rightSuits']
     battle = squirt['battle']
 
     suitPos = suit.getPos(battle)
@@ -940,20 +923,7 @@ def __doStormCloud(squirt, delay, fShowStun, npcs):
         toon = squirt['npc']
     level = squirt['level']
     hpbonus = squirt['hpbonus']
-    target = squirt['target']
-    suit = target['suit']
-    hp = target['hp']
-    kbbonus = target['kbbonus']
-    died = target['died']
-    revived = target['revived']
-    leftSuits = target['leftSuits']
-    rightSuits = target['rightSuits']
-    battle = squirt['battle']
-
-    suitPos = suit.getPos(battle)
-    origHpr = toon.getHpr(battle)
-    hitSuit = hp > 0
-    scale = sprayScales[level]
+    tracks = Parallel()
 
     if toon.getTransformationsIndex(0):
         animTrack = MovieUtil.getSuitButtonAnimTrack(toon.suit)
@@ -973,10 +943,10 @@ def __doStormCloud(squirt, delay, fShowStun, npcs):
         cloudScaleDur = 1.5
         rainDelay = 1
         effectDelay = 0.3
-        
-    tracks = Parallel()
-    tracks.append(__getSoundTrack(level, hitSuit, firstSoundDelay, toon))
-    tracks.append(__getSoundTrack(level, hitSuit, secondSoundDelay, toon))
+
+    battle = squirt['battle']
+    origHpr = toon.getHpr(battle)
+    suitPos = MovieUtil.calcAvgSuitPos(squirt)
 
     toonTrack = Sequence( 
         Func(toon.headsUp, battle, suitPos),
@@ -986,85 +956,115 @@ def __doStormCloud(squirt, delay, fShowStun, npcs):
         toonTrack.append(Func(toon.setHpr, battle, origHpr))
     tracks.append(toonTrack)
 
-    cloud = globalPropPool.getProp('stormcloud')
-    cloud2 = MovieUtil.copyProp(cloud)
-    BattleParticles.loadParticles()
-    trickleEffect = BattleParticles.createParticleEffect(file='trickleLiquidate')
-    rainEffect = BattleParticles.createParticleEffect(file='liquidate')
-    rainEffect2 = BattleParticles.createParticleEffect(file='liquidate')
-    rainEffect3 = BattleParticles.createParticleEffect(file='liquidate')
-    cloudHeight = suit.height + 3
-    cloudPosPoint = Point3(0, 0, cloudHeight)
-    scaleUpPoint = Point3(3, 3, 3)
-    rainEffects = [rainEffect, rainEffect2, rainEffect3]
-    if hp > 0:
-        cloudHold = 4.7
-    else:
-        cloudHold = 1.7
-
-    def getCloudTrack(cloud, suit, cloudPosPoint, scaleUpPoint, rainEffects, 
-                      rainDelay, effectDelay, cloudHold, useEffect, 
-                      battle = battle, trickleEffect = trickleEffect):
-        track = Sequence(
-            Func(MovieUtil.showProp, cloud, suit, cloudPosPoint), 
-            Func(cloud.pose, 'stormcloud', 0), 
-            LerpScaleInterval(cloud, cloudScaleDur, scaleUpPoint, startScale=MovieUtil.PNT3_NEARZERO), 
-            Wait(rainDelay)
-            )
-
-        if useEffect == 1:
-            ptrack = Parallel()
-            delay = trickleDuration = cloudHold * 0.25
-            trickleTrack = Sequence(
-                Func(battle.movie.needRestoreParticleEffect, trickleEffect), 
-                ParticleInterval(trickleEffect, cloud, worldRelative=0, duration=trickleDuration, cleanup=True), 
-                Func(battle.movie.clearRestoreParticleEffect, trickleEffect)
+    for target in squirt['target']:
+        suit = target['suit']
+        hp = target['hp']
+        kbbonus = target['kbbonus']
+        died = target['died']
+        revived = target['revived']
+        leftSuits = target['leftSuits']
+        rightSuits = target['rightSuits']
+        suitPos = suit.getPos(battle)
+        hitSuit = hp > 0
+        scale = sprayScales[level]
+        tracks.append(__getSoundTrack(level, hitSuit, firstSoundDelay, toon))
+        tracks.append(__getSoundTrack(level, hitSuit, secondSoundDelay, toon))
+        delayTime = random.random()
+        cloud = globalPropPool.getProp('stormcloud')
+        cloud2 = MovieUtil.copyProp(cloud)
+        BattleParticles.loadParticles()
+        trickleEffect = BattleParticles.createParticleEffect(file='trickleLiquidate')
+        rainEffect = BattleParticles.createParticleEffect(file='liquidate')
+        rainEffect2 = BattleParticles.createParticleEffect(file='liquidate')
+        rainEffect3 = BattleParticles.createParticleEffect(file='liquidate')
+        cloudHeight = suit.height + 3
+        cloudPosPoint = Point3(0, 0, cloudHeight)
+        scaleUpPoint = Point3(3, 3, 3)
+        rainEffects = [rainEffect, rainEffect2, rainEffect3]
+        if hp > 0:
+            cloudHold = 4.7
+        else:
+            cloudHold = 1.7
+        
+        def getCloudTrack(cloud, suit, cloudPosPoint, scaleUpPoint, rainEffects, 
+                          rainDelay, effectDelay, cloudHold, useEffect, 
+                          battle = battle, trickleEffect = trickleEffect):
+            track = Sequence(
+                Func(MovieUtil.showProp, cloud, suit, cloudPosPoint), 
+                Func(cloud.pose, 'stormcloud', 0), 
+                LerpScaleInterval(cloud, cloudScaleDur, scaleUpPoint, startScale=MovieUtil.PNT3_NEARZERO), 
+                Wait(rainDelay)
                 )
-            track.append(trickleTrack)
-            for i in range(0, 3):
-                dur = cloudHold - 2 * trickleDuration
+        
+            if useEffect == 1:
+                ptrack = Parallel()
+                delay = trickleDuration = cloudHold * 0.25
+                trickleTrack = Sequence(
+                    Func(battle.movie.needRestoreParticleEffect, trickleEffect), 
+                    ParticleInterval(trickleEffect, cloud, worldRelative=0, duration=trickleDuration, cleanup=True), 
+                    Func(battle.movie.clearRestoreParticleEffect, trickleEffect)
+                    )
+                track.append(trickleTrack)
+                for i in range(0, 3):
+                    dur = cloudHold - 2 * trickleDuration
+                    ptrack.append(
+                        Sequence(
+                            Func(battle.movie.needRestoreParticleEffect, rainEffects[i]), 
+                            Wait(delay), 
+                            ParticleInterval(rainEffects[i], cloud, worldRelative=0, duration=dur, cleanup=True), 
+                            Func(battle.movie.clearRestoreParticleEffect, rainEffects[i])
+                        )
+                    )
+                    delay += effectDelay
+        
                 ptrack.append(
                     Sequence(
-                        Func(battle.movie.needRestoreParticleEffect, rainEffects[i]), 
-                        Wait(delay), 
-                        ParticleInterval(rainEffects[i], cloud, worldRelative=0, duration=dur, cleanup=True), 
-                        Func(battle.movie.clearRestoreParticleEffect, rainEffects[i])
+                        Wait(3 * effectDelay), 
+                        ActorInterval(cloud, 'stormcloud', startTime=1, duration=cloudHold)
                     )
                 )
-                delay += effectDelay
-
-            ptrack.append(
+                track.append(ptrack)
+            else:
+                track.append(ActorInterval(cloud, 'stormcloud', startTime=1, duration=cloudHold))
+            track.append(LerpScaleInterval(cloud, 0.5, MovieUtil.PNT3_NEARZERO))
+            track.append(Func(MovieUtil.removeProp, cloud))
+            return track
+        
+        tracks.append(
+            Sequence(
+                Wait(delayTime),
+                getCloudTrack(cloud, suit, cloudPosPoint, scaleUpPoint, 
+                              rainEffects, rainDelay, effectDelay,
+                              cloudHold, useEffect=1)
+            )
+        )
+        tracks.append(
+            Sequence(
+                Wait(delayTime),
+                getCloudTrack(cloud2, suit, cloudPosPoint, scaleUpPoint, 
+                              rainEffects, rainDelay, effectDelay,
+                              cloudHold, useEffect=0)
+            )
+        )
+        if hp > 0 or delay <= 0:
+            tracks.append(
                 Sequence(
-                    Wait(3 * effectDelay), 
-                    ActorInterval(cloud, 'stormcloud', startTime=1, duration=cloudHold)
+                    Wait(delayTime),
+                    __getSuitTrack(suit, contactDelay, tSuitDodges, hp, hpbonus, 
+                                   kbbonus, 'soak', died, leftSuits, rightSuits,
+                                   battle, toon, fShowStun, npcs, beforeStun=2.6,
+                                   afterStun=2.3, revived=revived)
                 )
             )
-            track.append(ptrack)
-        else:
-            track.append(ActorInterval(cloud, 'stormcloud', startTime=1, duration=cloudHold))
-        track.append(LerpScaleInterval(cloud, 0.5, MovieUtil.PNT3_NEARZERO))
-        track.append(Func(MovieUtil.removeProp, cloud))
-        return track
+        
+        if hp > 0:
+            changeSuitColor = Sequence(
+                Wait(contactDelay - 0.5 + delayTime),
+                LerpColorScaleInterval(suit, 3.5, (0.4, 0.55, 0.8, 1), blendType='easeInOut'),
+                LerpColorScaleInterval(suit, 3, (1, 1, 1, 1), blendType='easeInOut')
+            )
+            tracks.append(changeSuitColor)
 
-    tracks.append(getCloudTrack(cloud, suit, cloudPosPoint, scaleUpPoint, 
-                                rainEffects, rainDelay, effectDelay, cloudHold, 
-                                useEffect=1))
-    tracks.append(getCloudTrack(cloud2, suit, cloudPosPoint, scaleUpPoint, 
-                                rainEffects, rainDelay, effectDelay, cloudHold, 
-                                useEffect=0))
-    if hp > 0 or delay <= 0:
-        tracks.append(__getSuitTrack(suit, contactDelay, tSuitDodges, hp, hpbonus, 
-                                     kbbonus, 'soak', died, leftSuits, 
-                                     rightSuits, battle, toon, fShowStun, npcs, 
-                                     beforeStun=2.6, afterStun=2.3, revived=revived))
-
-    if hp > 0:
-        changeSuitColor = Sequence(
-            Wait(contactDelay - 0.5),
-            LerpColorScaleInterval(suit, 3.5, (0.4, 0.55, 0.8, 1), blendType='easeInOut'),
-            LerpColorScaleInterval(suit, 3, (1, 1, 1, 1), blendType='easeInOut')
-        )
-        tracks.append(changeSuitColor)
     return tracks
 
 
@@ -1081,8 +1081,7 @@ def __doGeyser(squirt, delay, fShowStun, npcs, uberClone = 0):
 
     battle = squirt['battle']
     origHpr = toon.getHpr(battle)
-    suit = squirt['target'][0]['suit']
-    suitPos = suit.getPos(battle)
+    suitPos = MovieUtil.calcAvgSuitPos(squirt)
 
     if toon.getTransformationsIndex(0):
         animTrack = MovieUtil.getSuitButtonAnimTrack(toon.suit)

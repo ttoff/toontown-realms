@@ -1,0 +1,10 @@
+{
+    "identifier": "ttrealms:snowball_group",
+    "display_name": "#CogAttackSnowball",
+    "description": "#CogAttackDescSnowball",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:snowball"
+    ]
+}

@@ -518,7 +518,7 @@ class EP02DistributedCogBathroom(DistributedEpisodeZone.DistributedEpisodeZone):
                   'parent': self.toon,
                   'suitName': 'sc',
                   'battle': battle,
-                  'target': target,
+                  'target': [target],
                   'name': ToontownGlobals.ShortWorkBathroomBattleAttackInfo[attackIndex][2],
                   'animName': ToontownGlobals.ShortWorkBathroomBattleAttackInfo[attackIndex][7],
                   'taunt': None}

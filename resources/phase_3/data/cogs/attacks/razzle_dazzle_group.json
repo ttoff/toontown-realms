@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:razzle_dazzle_group",
+    "display_name": "#CogAttackRazzleDazzle",
+    "animation": "smile",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:razzle_dazzle"
+    ]
+}

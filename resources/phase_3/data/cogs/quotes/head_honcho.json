@@ -1,0 +1,12 @@
+{
+    "faceoff_taunts": [
+        "Your defeat will make headway for my promotion.",
+        "Your head will roll for this.",
+        "I'm known for my cunning, so keep your head on a swivel.",
+        "I'll turn heads with how quick I can end this.",
+        "You're heading into the danger zone."
+    ],
+    "cog_building_boss_taunts": [
+        "So much for that headcount earlier today..."
+    ]
+}

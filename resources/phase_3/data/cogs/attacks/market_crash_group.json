@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:market_crash_group",
+    "display_name": "#CogAttackMarketCrash",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:market_crash"
+    ]
+}

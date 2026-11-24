@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:red_tape_group",
+    "display_name": "#CogAttackRedTape",
+    "animation": "throw-object",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:red_tape"
+    ]
+}

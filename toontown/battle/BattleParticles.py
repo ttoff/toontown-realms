@@ -1,3 +1,4 @@
+from typing import Tuple, Union
 from direct.particles.ParticleEffect import *
 import os
 from direct.directnotify import DirectNotifyGlobal
@@ -121,12 +122,16 @@ def createParticleEffect(name = None, file = None, numParticles = None, color = 
     return None
 
 
-def setEffectTexture(effect, name, color = None):
+def setEffectTexture(effect, name: Union[str, Tuple[str, ...]], color = None):
+    if not isinstance(name, tuple):
+        name = (name,)
     particles = effect.getParticlesNamed('particles-1')
-    np = getParticle(name)
+    np = getParticle(name[0])
     if color:
         particles.renderer.setColor(color)
     particles.renderer.setFromNode(np)
+    for i in range(1, len(name)):
+        particles.renderer.addFromNode(getParticle(name[i]))
 
 
 def __makeGearExplosion(numParticles = None, style = 'Normal'):

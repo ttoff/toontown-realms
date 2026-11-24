@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:chomp_group",
+    "display_name": "#CogAttackChomp",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:chomp"
+    ]
+}

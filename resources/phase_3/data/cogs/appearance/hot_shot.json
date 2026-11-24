@@ -18,7 +18,7 @@
     "name_plural": "#SuitHotShotP",
     "hand_color": [0.5, 0.3, 0.2, 1.0],
     "quote_sets": [
-        "mh",
+        "hot_shot",
         "default_brushoffs",
         "default_cog_building_boss_taunts",
         "default_factory_boss_taunts",

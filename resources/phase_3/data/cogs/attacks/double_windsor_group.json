@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:double_windsor_group",
+    "display_name": "#CogAttackDoubleWindsor",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:double_windsor"
+    ]
+}

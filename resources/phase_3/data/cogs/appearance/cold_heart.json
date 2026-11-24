@@ -18,7 +18,7 @@
     "name_plural": "#SuitColdHeartP",
     "hand_color": [0.55, 0.75, 1.0, 1.0],
     "quote_sets": [
-        "nc",
+        "cold_heart",
         "default_brushoffs",
         "default_cog_building_boss_taunts",
         "default_da_office_boss_taunts",

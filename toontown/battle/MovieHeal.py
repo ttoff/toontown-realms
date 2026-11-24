@@ -146,14 +146,11 @@ def __getPartTrack(particleEffect, startDelay, durationDelay, partExtraArgs):
     return Sequence(Wait(startDelay), ParticleInterval(pEffect, parent, worldRelative, duration=durationDelay, cleanup=True))
 
 
-def __getSoundTrack(level, delay, duration = None, node = None):
+def __getSoundTrack(level, delay, duration = 0.0, node = None):
     soundEffect = globalBattleSoundCache.getSound(soundFiles[level])
     soundIntervals = Sequence()
     if soundEffect:
-        if duration:
-            playSound = SoundInterval(soundEffect, duration=duration, node=node)
-        else:
-            playSound = SoundInterval(soundEffect, node=node)
+        playSound = SoundInterval(soundEffect, duration=duration, node=node)
         soundIntervals.append(Wait(delay))
         soundIntervals.append(playSound)
     return soundIntervals

@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:play_hardball_group",
+    "display_name": "#CogAttackPlayHardball",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:play_hardball"
+    ]
+}

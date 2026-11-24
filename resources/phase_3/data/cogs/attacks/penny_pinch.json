@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:penny_pinch",
+    "display_name": "#CogAttackPennyPinch",
+    "animation": "magic2",
+    "target_type": "single",
+    "attack_quote_sets": [
+        "ttrealms:penny_pinch"
+    ]
+}

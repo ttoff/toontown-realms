@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:pink_slip_group",
+    "display_name": "#CogAttackPinkSlip",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:pink_slip"
+    ]
+}

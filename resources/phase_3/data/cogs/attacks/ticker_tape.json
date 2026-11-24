@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:ticker_tape",
+    "display_name": "#CogAttackTickerTape",
+    "animation": "throw-object",
+    "target_type": "single",
+    "attack_quote_sets": [
+        "ttrealms:ticker_tape"
+    ]
+}

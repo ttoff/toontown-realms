@@ -122,12 +122,9 @@ def __doTrapLevel(trap, trapProps, explode = 0):
     return None
 
 
-def getSoundTrack(fileName, delay = 0.01, duration = None, node = None):
+def getSoundTrack(fileName, delay = 0.01, duration = 0.0, node = None):
     soundEffect = globalBattleSoundCache.getSound(fileName)
-    if duration:
-        return Sequence(Wait(delay), SoundInterval(soundEffect, duration=duration, node=node))
-    else:
-        return Sequence(Wait(delay), SoundInterval(soundEffect, node=node))
+    return Sequence(Wait(delay), SoundInterval(soundEffect, duration=duration, node=node))
 
 
 def __createThrownTrapMultiTrack(trap, propList, propName, propPos = None, propHpr = None, anim = 0, explode = 0):

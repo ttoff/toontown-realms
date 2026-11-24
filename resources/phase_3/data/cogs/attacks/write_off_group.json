@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:write_off_group",
+    "display_name": "#CogAttackWriteOff",
+    "animation": "hold-pencil",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:write_off"
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:speed_dial",
+    "display_name": "#CogAttackSpeedDial",
+    "animation": "phone",
+    "target_type": "single",
+    "attack_quote_sets": [
+        "ttrealms:speed_dial"
+    ]
+}

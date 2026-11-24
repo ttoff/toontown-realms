@@ -18,7 +18,7 @@
     "name_plural": "#SuitTheRacketeerP",
     "hand_color": [0.65, 0.95, 0.85, 1.0],
     "quote_sets": [
-        "m",
+        "the_racketeer",
         "default_brushoffs",
         "default_cog_building_boss_taunts",
         "default_mint_boss_taunts",

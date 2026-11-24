@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:restraining_order_group",
+    "display_name": "#CogAttackRestrainingOrder",
+    "animation": "throw-paper",
+    "target_type": "group",
+    "attack_quote_sets": [
+        "ttrealms:restraining_order"
+    ]
+}

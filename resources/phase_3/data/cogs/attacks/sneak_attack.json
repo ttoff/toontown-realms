@@ -1,0 +1,9 @@
+{
+    "identifier": "ttrealms:sneak_attack",
+    "display_name": "#CogAttackSneakAttack",
+    "animation": "act-innocent",
+    "target_type": "single",
+    "attack_quote_sets": [
+        "ttrealms:sneak_attack"
+    ]
+}
