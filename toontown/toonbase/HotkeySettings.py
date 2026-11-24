@@ -170,6 +170,13 @@ PreviousCameraView = HotkeySetting(
     default = 'shift-tab'
 )
 
+ResetCameraView = HotkeySetting(
+    "ResetCameraView",
+    settingsFile = HotkeySettingsManager,
+    category = SettingsCategory.HOTKEY_MISC,
+    default = 'control-tab'
+)
+
 CameraModeMenu = HotkeySetting(
     "CameraModeMenu",
     settingsFile = HotkeySettingsManager,

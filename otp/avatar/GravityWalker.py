@@ -15,18 +15,26 @@ it does not:
 although it does send messages that allow a listener to play sounds or
 animations based on walker events.
 """
+import math
+from typing import Literal, Callable, Final
+
+from direct.controls.ControlManager import CollisionHandlerRayStart
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase import DirectObject
-from direct.controls.ControlManager import CollisionHandlerRayStart
 from direct.showbase.InputStateGlobal import inputState
 from direct.showbase.MessengerGlobal import messenger
 from direct.task.Task import Task
 from direct.task.TaskManagerGlobal import taskMgr
-from direct.extensions_native import VBase3_extensions
-from direct.extensions_native import VBase4_extensions
-from panda3d.core import *
-import math
+from panda3d.core import Vec3, Quat, Vec2, MouseButton, Point3, Mat3, ClockObject, CollisionTraverser, NodePath, BitMask32, CollisionHandlerPusher, CollisionNode, CollisionSphere, CollisionHandlerEvent, \
+    CollisionHandlerFluidPusher, ConfigVariableBool, CollisionHandlerGravity, CollisionRay
 
+from otp.avatar.Avatar import Avatar
+
+TURN_SMOOTHING: Final[float] = .6
+SMOOTH_TURN_RATE: Final[float] = 30
+
+# the height at which we tell the mover to force the toon down to keep them on the ground
+SLOPE_AIRBORNE_THRESHOLD: Final[float] = 0.15
 
 class GravityWalker(DirectObject.DirectObject):
     notify = directNotify.newCategory("GravityWalker")
@@ -37,8 +45,8 @@ class GravityWalker(DirectObject.DirectObject):
     DiagonalFactor = math.sqrt(2.) / 2.
 
     # special methods
-    def __init__(self, gravity = 64.348, standableGround = 0.707,
-                 hardLandingForce = 16.0, legacyLifter = False):
+    def __init__(self, gravity: float = 64.348, standableGround: float = 0.707,
+                 hardLandingForce: float = 16.0, legacyLifter: bool = False):
         assert self.notify.debugStateCall(self)
         DirectObject.DirectObject.__init__(self)
         self.__gravity = gravity
@@ -76,26 +84,58 @@ class GravityWalker(DirectObject.DirectObject):
         self.highMark = 0
         self.isFlying = False
 
-    def setWalkSpeed(self, forward, jump, reverse, rotate):
+        # Modern Control Scheme
+        self._cameraLocked: bool = False
+        self._desiredDirection: Vec2 = Vec2(0, 0)
+        self._lastParent: NodePath | None = None
+        self._lastLocalPos: Vec3 | None = None
+        self._realVelocity: Vec3 = Vec3(0)
+
+    def setCameraLocked(self, locked: bool):
+        """ Set that the camera is being controlled dby the mouse -- right click held """
+        self._cameraLocked = locked
+
+    def setWalkSpeed(self, forward: float, jump: float, reverse: float, rotate: float):
         assert self.notify.debugStateCall(self)
         self.avatarControlForwardSpeed = forward
         self.avatarControlJumpForce = jump
         self.avatarControlReverseSpeed = reverse
         self.avatarControlRotateSpeed = rotate
 
-    def getSpeeds(self):
+    def getSpeeds(self) -> tuple[float, float, float]:
         # assert self.debugPrint("getSpeeds()")
         return (self.speed, self.rotationSpeed, self.slideSpeed)
 
-    def getIsAirborne(self):
+    def _getVelocity(self) -> Vec3:
+        """
+        gets a real velocity of how the toon is *actually* moving based on delta from prior frame, used for controlling animation speed
+        :return: World Space velocity
+        """
+        dt = base.clock.getDt()
+        parent = self.avatarNodePath.getParent()
+        localPos = Vec3(self.avatarNodePath.getPos())
+        vel = Vec3(self._realVelocity)
+
+        if self._lastLocalPos is not None and self._lastParent is not None \
+                and not self._lastParent.isEmpty() and dt > 0:
+            prevRender = base.render.getRelativePoint(self._lastParent, self._lastLocalPos)
+            curRender = self.avatarNodePath.getPos(base.render)
+            vel = Vec3(curRender - prevRender) / dt
+            #vel.setZ(0) - idk if i want this on or off..... if its uncommented, it doesnt take height into affect, but it kinda looks nice. if its off tho there's some bugs
+
+        self._lastParent = NodePath(parent)
+        self._lastLocalPos = localPos
+        return vel
+
+    def getIsAirborne(self) -> int:
         return self.isAirborne
 
-    def setAvatar(self, avatar):
+    def setAvatar(self, avatar: Avatar):
         self.avatar = avatar
         if avatar is not None:
             pass  # setup the avatar
 
-    def setupRay(self, bitmask, floorOffset, reach):
+    def setupRay(self, bitmask: BitMask32, floorOffset: float, reach: float):
         assert self.notify.debugStateCall(self)
         # This is a ray cast from your head down to detect floor polygons.
         # This ray start is arbitrarily high in the air.  Feel free to use
@@ -124,11 +164,11 @@ class GravityWalker(DirectObject.DirectObject):
         # If this is too low, we actually "fall" off steep stairs
         # and float above them as we go down. I increased this
         # from 8.0 to 16.0 to prevent this
-        # self.lifter.setMaxVelocity(16.0)
+        self.lifter.setMaxVelocity(16.0)
 
         self.lifter.addCollider(self.cRayNodePath, self.avatarNodePath)
 
-    def setupWallSphere(self, bitmask, avatarRadius):
+    def setupWallSphere(self, bitmask: BitMask32, avatarRadius: float):
         """
         Set up the collision sphere
         """
@@ -152,7 +192,7 @@ class GravityWalker(DirectObject.DirectObject):
         self.pusher.addCollider(cSphereNodePath, self.avatarNodePath)
         self.cWallSphereNodePath = cSphereNodePath
 
-    def setupEventSphere(self, bitmask, avatarRadius):
+    def setupEventSphere(self, bitmask: BitMask32, avatarRadius: float):
         """
         Set up the collision sphere
         """
@@ -176,7 +216,7 @@ class GravityWalker(DirectObject.DirectObject):
         self.event.addOutPattern("exit%in")
         self.cEventSphereNodePath = cSphereNodePath
 
-    def setupFloorSphere(self, bitmask, avatarRadius):
+    def setupFloorSphere(self, bitmask: BitMask32, avatarRadius: float):
         """
         Set up the collision sphere
         """
@@ -197,13 +237,13 @@ class GravityWalker(DirectObject.DirectObject):
         self.pusherFloor.addCollider(cSphereNodePath, self.avatarNodePath)
         self.cFloorSphereNodePath = cSphereNodePath
 
-    def setWallBitMask(self, bitMask):
+    def setWallBitMask(self, bitMask: BitMask32):
         self.wallBitmask = bitMask
 
-    def setFloorBitMask(self, bitMask):
+    def setFloorBitMask(self, bitMask: BitMask32):
         self.floorBitmask = bitMask
 
-    def swapFloorBitMask(self, oldMask, newMask):
+    def swapFloorBitMask(self, oldMask: BitMask32, newMask: BitMask32):
         self.floorBitmask = self.floorBitmask & ~ oldMask
         self.floorBitmask |= newMask
 
@@ -216,15 +256,15 @@ class GravityWalker(DirectObject.DirectObject):
     def toggleFly(self):
         self.setFly(not self.isFlying)
 
-    def setGravity(self, gravity):
+    def setGravity(self, gravity: float):
         self.__gravity = gravity
         self.lifter.setGravity(self.__gravity)
 
-    def getGravity(self, gravity):
+    def getGravity(self) -> float:
         return self.__gravity
 
-    def initializeCollisions(self, collisionTraverser, avatarNodePath,
-                             avatarRadius = 1.4, floorOffset = 1.0, reach = 1.0):
+    def initializeCollisions(self, collisionTraverser: CollisionTraverser, avatarNodePath: NodePath,
+                             avatarRadius: float = 1.4, floorOffset: float = 1.0, reach: float = 1.0):
         """
         floorOffset is how high the avatar can reach.  I.e. if the avatar
             walks under a ledge that is <= floorOffset above the ground (a
@@ -247,12 +287,12 @@ class GravityWalker(DirectObject.DirectObject):
             self.setupFloorSphere(self.floorBitmask, avatarRadius)
 
         self.setFly(False)
-        self.setCollisionsActive(1)
+        self.setCollisionsActive(True)
 
-    def setTag(self, key, value):
+    def setTag(self, key: str, value: str):
         self.cEventSphereNodePath.setTag(key, value)
 
-    def setAirborneHeightFunc(self, unused_parameter):
+    def setAirborneHeightFunc(self, unused_parameter: float):
         assert self.notify.debugStateCall(self)
         self.getAirborneHeight = self.lifter.getAirborneHeight
 
@@ -260,7 +300,7 @@ class GravityWalker(DirectObject.DirectObject):
         assert self.notify.debugStateCall(self)
         self.lifter.getAirborneHeight()
 
-    def setAvatarPhysicsIndicator(self, indicator):
+    def setAvatarPhysicsIndicator(self, indicator: NodePath):
         """
         indicator is a NodePath
         """
@@ -284,7 +324,7 @@ class GravityWalker(DirectObject.DirectObject):
 
         del self.getAirborneHeight
 
-    def setCollisionsActive(self, active = 1):
+    def setCollisionsActive(self, active: bool = True):
         assert self.notify.debugStateCall(self)
         if self.collisionsActive != active:
             self.collisionsActive = active
@@ -335,7 +375,7 @@ class GravityWalker(DirectObject.DirectObject):
                 base.shadowTrav.removeCollider(self.cEventSphereNodePath)
                 base.shadowTrav.removeCollider(self.cRayNodePath)
 
-    def getCollisionsActive(self):
+    def getCollisionsActive(self) -> int:
         assert self.debugPrint("getCollisionsActive() returning=%s" % (
             self.collisionsActive,))
         return self.collisionsActive
@@ -369,7 +409,7 @@ class GravityWalker(DirectObject.DirectObject):
         tempCTrav.addCollider(self.cRayNodePath, self.lifter)
         tempCTrav.traverse(render)
 
-    def setMayJump(self, task):
+    def setMayJump(self, task: Task) -> Callable[..., bool]:
         """
         This function's use is internal to this class (maybe I'll add
         the __ someday).  Anyway, if you want to enable or disable
@@ -379,7 +419,7 @@ class GravityWalker(DirectObject.DirectObject):
         self.mayJump = 1
         return Task.done
 
-    def startJumpDelay(self, delay):
+    def startJumpDelay(self, delay: float):
         assert self.notify.debugStateCall(self)
         if self.jumpDelayTask:
             self.jumpDelayTask.remove()
@@ -389,7 +429,7 @@ class GravityWalker(DirectObject.DirectObject):
             self.setMayJump,
             "jumpDelay-%s" % id(self))
 
-    def addBlastForce(self, vector):
+    def addBlastForce(self, vector: Vec3):
         self.lifter.addVelocity(vector.length())
 
     def displayDebugInfo(self):
@@ -406,14 +446,24 @@ class GravityWalker(DirectObject.DirectObject):
         onScreenDebug.add("w contact normal", self.lifter.getContactNormal().pPrintValues())
         onScreenDebug.add("w mayJump", self.mayJump)
         onScreenDebug.add("w impact", self.lifter.getImpactVelocity())
-        onScreenDebug.add("w velocity", self.lifter.getVelocity())
+        onScreenDebug.add("w liftvelocity", self.lifter.getVelocity())
         onScreenDebug.add("w isAirborne", self.isAirborne)
         onScreenDebug.add("w hasContact", self.lifter.hasContact())
 
-    def handleAvatarControls(self, task):
+        onScreenDebug.add('w vel', self.vel)
+        onScreenDebug.add('w worldVel', self._realVelocity)
+        onScreenDebug.add('w lastLocalPos', self._lastLocalPos)
+        onScreenDebug.add('w desiredDirection', self._desiredDirection)
+        onScreenDebug.add('w speed', self.speed)
+
+    def handleAvatarControls(self, task: Task) -> int:
         """
         Check on the arrow keys and update the avatar.
         """
+        self._realVelocity = self._getVelocity()
+        if self._cameraLocked:
+            return self._handleModernAvatarControls(task)
+
         # get the button states:
         run = inputState.isSet("run")
         forward = inputState.isSet("forward")
@@ -464,9 +514,9 @@ class GravityWalker(DirectObject.DirectObject):
         if self.isFlying:
             self.setCollisionsActive(0)
             if jump:
-                self.avatar.setZ(self.avatar.getZ() + (10 * globalClock.getDt()))
+                self.avatar.setZ(self.avatar.getZ() + (10 * base.clock.getDt()))
             elif inputState.isSet('descend'):
-                self.avatar.setZ(self.avatar.getZ() - (10 * globalClock.getDt()))
+                self.avatar.setZ(self.avatar.getZ() - (10 * base.clock.getDt()))
         else:
             self.setCollisionsActive(1)
             if self.lifter.isOnGround():
@@ -541,9 +591,147 @@ class GravityWalker(DirectObject.DirectObject):
             self.avatarNodePath.setH(self.avatarNodePath.getH() + rotation)
         else:
             self.vel.set(0.0, 0.0, 0.0)
+        sign = -1.0 if self.speed < 0 else 1.0
+        self.speed = sign * self._realVelocity.length()
         if self.moving or jump:
             messenger.send("avatarMoving")
         return Task.cont
+
+    # == New modern control system ==
+
+    def _handleModernAvatarControls(self, task: Task) -> int:
+        """
+        The new, modern control system
+        Player simply smoothly moves in desired direction, no more hacky strafe animations!
+        Movement more similar to modern third-person games.
+        """
+        dt = base.clock.dt
+        curPos = self.avatarNodePath.getPos(base.render)
+        realVelocity = self._realVelocity
+        self.speed = realVelocity.length()
+        self.__oldDt = dt
+        self._desiredDirection = self._getDesiredDirection()
+        direction = self._desiredDirection.normalized()
+
+        # jump handling
+        # todo: probably migrate this out of this method and de-duplicate the code here from the legacy mover
+        jump: bool = inputState.isSet("jump")
+
+        if not self.isFlying:
+            self.setCollisionsActive(True)
+            if self.lifter.isOnGround():
+                if self.isAirborne:
+                    self.isAirborne = 0
+                    assert self.debugPrint("isAirborne 0 due to isOnGround() true")
+                    impact = self.lifter.getImpactVelocity()
+                    if impact < -30.0:
+                        messenger.send("jumpHardLand")
+                        self.startJumpDelay(0.3)
+                    else:
+                        messenger.send("jumpLand")
+                        if impact < -5.0:
+                            self.startJumpDelay(0.2)
+                        # else, ignore the little potholes.
+                assert self.isAirborne == 0
+                self.priorParent = Vec3.zero()
+                if jump and self.mayJump:
+                    # The jump button is down and we're close
+                    # enough to the ground to jump.
+                    self.lifter.addVelocity(self.avatarControlJumpForce)
+                    messenger.send("jumpStart")
+                    self.isAirborne = 1
+                    assert self.debugPrint("isAirborne 1 due to jump")
+            else:
+                if self.isAirborne == 0:
+                    assert self.debugPrint("isAirborne 1 due to isOnGround() false")
+                self.isAirborne = 1
+
+        velocity = self._toWorldVelocity(direction)
+        self.moving = velocity.lengthSquared() > 0
+
+        if self.moving:
+            # face where we're actually moving, l;ike if we're agains ta wall the toon will turn
+
+            # only do this if we're going at a reasonable speed, if we're going too slow floating point math will freak out and make us spaz
+            if realVelocity.length() > 0.1:
+                self._turnToward(realVelocity)
+            else:
+                self._turnToward(velocity)
+
+            # keep the toon stuck to the ground when going down a slope, stairs etc
+            if self.lifter.getAirborneHeight() < SLOPE_AIRBORNE_THRESHOLD:
+                slopeForward = self.lifter.getContactNormal().cross(Vec3.right())
+                slopeForward.normalize()
+                velocity.setZ(slopeForward.z)
+            velocity.normalize()
+
+        speed = self.avatarControlForwardSpeed
+        debugRunning = inputState.isSet("debugRunning")
+        if debugRunning:
+            speed *= base.debugRunningMultiplier
+        self.vel = velocity * speed * dt
+        # noclip mode
+        if self.isFlying:
+            self.setCollisionsActive(False)
+            if jump:
+                self.vel.setZ(10* dt)
+            elif inputState.isSet('descend'):
+                self.vel.setZ(-10* dt)
+        self.avatarNodePath.setFluidPos(base.render, curPos + self.vel)
+        if self.wantDebugIndicator:
+            self.displayDebugInfo()
+        self.rotationSpeed = 0
+        self.slideSpeed = 0
+        return task.cont
+
+    def _getDesiredDirection(self) -> Vec2:
+        """
+        Get (camera relative) vector of how the controller WANTS to move
+        vec2: x = -left, +right / y = +forward, -backwards
+        """
+        forward = inputState.isSet('forward') or (
+                # left + right mouse makes you walk forward
+                self._cameraLocked and base.mouseWatcherNode.hasMouse() and base.mouseWatcherNode.isButtonDown(MouseButton.one()) and base.mouseWatcherNode.isButtonDown(MouseButton.three())
+        ) or (hasattr(base, 'localAvatar') and base.localAvatar.getAutoRun())
+
+        horizontal: float = inputState.isSet('turnRight') - inputState.isSet('turnLeft')
+        vert: float = forward - inputState.isSet('reverse')
+        # todo: controller support?
+        return Vec2(horizontal, vert)
+
+    @staticmethod
+    def _toWorldVelocity(direction: Vec2) -> Vec3:
+        """
+        convert the desired direction to world space
+        :param direction: Input Direction relative to camera
+        """
+        camQuat: Quat = base.camera.getQuat(base.render)
+        forwardVec = camQuat.getForward()
+        forwardVec = Vec3(forwardVec.x, forwardVec.y, 0)
+        forwardVec.normalize()
+        rightVec = camQuat.getRight()
+        rightVec = Vec3(rightVec.x, rightVec.y, 0)
+        rightVec.normalize()
+        return forwardVec * direction.y + rightVec * direction.x
+
+    def _turnToward(self, velocity: Vec3):
+        """
+        smoothly turn toon towards the velocity (world space)
+        Makes the toon face the direction we're ACTUALLY moving vs the direction we're inputting
+        looks way better than walking straight into a wall
+        only works on modern control scheme though since legacy rotates the camera basedd on toons direction. too bad.
+        :param velocity: World space velocity the toon is moving
+        """
+        targetH = -math.degrees(math.atan2(
+            velocity.x, velocity.y))
+        currentH = self.avatarNodePath.getH(base.render)
+
+        diff = (targetH - currentH + 180) % 360 - 180
+
+        ratio = 1 - TURN_SMOOTHING ** (base.clock.getDt() * SMOOTH_TURN_RATE)
+        self.avatar.setH(base.render, currentH + diff * ratio)
+
+    # ====
 
     def doDeltaPos(self):
         assert self.notify.debugStateCall(self)
@@ -570,7 +758,7 @@ class GravityWalker(DirectObject.DirectObject):
         self.lifter.setVelocity(0.0)
         self.priorParent = Vec3.zero()
 
-    def getVelocity(self):
+    def getVelocity(self) -> Vec3:
         return self.vel
 
     def enableAvatarControls(self):
@@ -627,12 +815,12 @@ class GravityWalker(DirectObject.DirectObject):
         self.lifter.flush()  # not currently defined or needed
 
     if __debug__:
-        def debugPrint(self, message):
+        def debugPrint(self, message: str) -> Literal[1]:
             """for debugging"""
             return self.notify.debug(
                 str(id(self)) + ' ' + message)
 
     # There are sometimes issues if the collision ray height is
     # so tall that it collides with multiple levels of floors.
-    def setCollisionRayHeight(self, height):
+    def setCollisionRayHeight(self, height: float):
         self.cRay.setOrigin(0.0, 0.0, height)

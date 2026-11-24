@@ -54,10 +54,11 @@ class CameraBase(FSM):
         mouseData = base.win.getPointer(0)
         # Save the cursor origin so we can set it back when we are done controllign
         self._mouseOrigin = int(mouseData.getX()), int(mouseData.getY())
-        if sys.platform == 'win32':
+        if sys.platform != 'win32':
+            self._lastMousePos = int(mouseData.getX()), int(mouseData.getY())
+        else:
             base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
-
-        self._lastMousePos = base.win.getXSize() // 2, base.win.getYSize() // 2
+            self._lastMousePos = base.win.getXSize() // 2, base.win.getYSize() // 2
 
         props = WindowProperties()
         props.setCursorHidden(True)
@@ -126,7 +127,8 @@ class CameraBase(FSM):
         mouseData = base.win.getPointer(0)
         # distance between current frame and last frame mouse positions
         self._mouseDelta = mouseData.getX() - self._lastMousePos[0], mouseData.getY() - self._lastMousePos[1]
-        base.win.movePointer(0, winSize[0] // 2, winSize[1] // 2)
+        if sys.platform == 'win32':
+            base.win.movePointer(0, winSize[0] // 2, winSize[1] // 2)
         mouseData = base.win.getPointer(0)
         # save this frame as the 'last' frame
         self._lastMousePos = mouseData.getX(), mouseData.getY()

@@ -1737,17 +1737,23 @@ class Toon(Avatar.Avatar, ToonHead):
             self.jar = None
         return
 
-    def setSpeed(self, forwardSpeed, rotateSpeed, slideSpeed = 0):
+    def setSpeed(self, forwardSpeed: float, rotateSpeed: float, slideSpeed: float = 0) -> int | None:
+        # todo: instead of playing footestps at a fixed loop, play them when the feet are supposed to touch the ground
         pastRot = self.rotateSpeed
         self.forwardSpeed = forwardSpeed
         self.rotateSpeed = rotateSpeed
         self.slideSpeed = slideSpeed
         action = None
-        if self.standWalkRunReverse != None:
+        rate: float = -1
+        if self.standWalkRunReverse is not None:
             if forwardSpeed >= ToontownGlobals.RunCutOff:
                 action = ToontownGlobals.RUN_INDEX
+                # scale the play rate by how fast we're actually going compared ot the fwd speed
+                # makes it faster if we're faster, slow if we're slower.
+                rate = forwardSpeed / ToontownGlobals.ToonForwardSpeed
             elif forwardSpeed > ToontownGlobals.WalkCutOff:
                 action = ToontownGlobals.WALK_INDEX
+                rate = forwardSpeed / ToontownGlobals.ToonReverseSpeed
             elif forwardSpeed < -ToontownGlobals.WalkCutOff:
                 action = ToontownGlobals.REVERSE_INDEX
             elif rotateSpeed != 0.0:
@@ -1759,22 +1765,27 @@ class Toon(Avatar.Avatar, ToonHead):
             else:
                 action = ToontownGlobals.STAND_INDEX
 
-            # =======================================
-            # Adjust strafe angle
-            if abs(slideSpeed) < ToontownGlobals.WalkCutOff:
-                self.resetStrafeRotation()
-            else:
-                # Calculate the angle based on the toon's velocity
-                velVec = Vec2(slideSpeed, forwardSpeed)
-                velVec.normalize()
-                angle = rad2Deg(math.atan2(velVec.getY(), velVec.getX())) - 90.0
+            self.forcedRate = rate
 
-                # We want to invert this if the toon is walking backwards
-                if action == ToontownGlobals.REVERSE_INDEX:
-                    angle -= 180.0
+            if __debug__:
+                onScreenDebug.add('toon adj LocomotionPlayRate', self.forcedRate)
 
-                self.setStrafeRotation(angle)
             # =======================================
+            # # Adjust strafe angle
+            # if abs(slideSpeed) < ToontownGlobals.WalkCutOff:
+            #     self.resetStrafeRotation()
+            # else:
+            #     # Calculate the angle based on the toon's velocity
+            #     velVec = Vec2(slideSpeed, forwardSpeed)
+            #     velVec.normalize()
+            #     angle = rad2Deg(math.atan2(velVec.getY(), velVec.getX())) - 90.0
+            #
+            #     # We want to invert this if the toon is walking backwards
+            #     if action == ToontownGlobals.REVERSE_INDEX:
+            #         angle -= 180.0
+            #
+            #     self.setStrafeRotation(angle)
+            # # =======================================
 
             anim, rate = self.standWalkRunReverse[action]
             if self.forcedRate != -1:
@@ -1946,7 +1957,9 @@ class Toon(Avatar.Avatar, ToonHead):
             # if self.getActiveTransformationIndex() == ToontownGlobals.TransformationClassicChar:
             # etc
 
-    def enterOff(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterOff(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.setActiveShadow(0)
         self.playingAnim = None
         return
@@ -1954,7 +1967,9 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitOff(self):
         pass
 
-    def enterNeutral(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterNeutral(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         anim = 'neutral'
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('neutral', [animMultiplier])
@@ -1968,7 +1983,9 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitNeutral(self):
         self.stop()
 
-    def enterVictory(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterVictory(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         anim = 'victory'
         frame = int(ts * self.getFrameRate(anim) * animMultiplier)
         if self.getTransformed() or self.getTPose():
@@ -1983,7 +2000,9 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitVictory(self):
         self.stop()
 
-    def enterHappy(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterHappy(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = None
         self.playingRate = None
         self.standWalkRunReverse = (('neutral', 1.0),
@@ -2003,7 +2022,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.motion.exit()
         return
 
-    def enterSad(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSad(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = 'sad'
         self.playingRate = None
         self.standWalkRunReverse = (('sad-neutral', 1.0),
@@ -2028,7 +2049,9 @@ class Toon(Avatar.Avatar, ToonHead):
             if not (ZoneUtil.isBetaPlaygroundZone(self.zoneId) and ClientSettings.BetaPlaygroundMovement.get()):
                 self.enableJump()
 
-    def enterCatching(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterCatching(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = None
         self.playingRate = None
         self.standWalkRunReverse = (('catch-neutral', 1.0),
@@ -2047,7 +2070,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.motion.exit()
         return
 
-    def enterCatchEating(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterCatchEating(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = None
         self.playingRate = None
         self.standWalkRunReverse = (('catch-eatneutral', 1.0),
@@ -2066,7 +2091,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.motion.exit()
         return
 
-    def enterWalk(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterWalk(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('walk', [animMultiplier])
         else:
@@ -2083,7 +2110,9 @@ class Toon(Avatar.Avatar, ToonHead):
         else:
             return self.getDuration('running-jump', 'legs')
 
-    def enterJump(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterJump(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.playingAnim == 'neutral':
             anim = 'jump'
         else:
@@ -2105,7 +2134,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.stop()
         self.playingAnim = 'neutral'
 
-    def enterJumpSquat(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterJumpSquat(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.playingAnim == 'neutral':
             anim = 'jump-squat'
         else:
@@ -2127,7 +2158,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.stop()
         self.playingAnim = 'neutral'
 
-    def enterJumpAirborne(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterJumpAirborne(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.playingAnim == 'neutral' or self.forceJumpIdle:
             anim = 'jump-idle'
         else:
@@ -2146,7 +2179,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.stop()
         self.playingAnim = 'neutral'
 
-    def enterJumpLand(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterJumpLand(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.playingAnim == 'running-jump-idle':
             anim = 'running-jump-land'
         else:
@@ -2168,7 +2203,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.stop()
         self.playingAnim = 'neutral'
 
-    def enterRun(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterRun(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('neutral')
         else:
@@ -2181,7 +2218,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.stop()
         Emote.globalEmote.releaseBody(self, 'toon, exitRun')
 
-    def enterSwim(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSwim(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableAll(self, 'enterSwim')
         self.playingAnim = 'swim'
         self.loop('swim')
@@ -2194,7 +2233,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.startBobSwimTask()
         self.setActiveShadow(0)
 
-    def enterCringe(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterCringe(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('cringe')
         else:
@@ -2202,7 +2243,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.getGeomNode().setPos(0, 0, -2)
             self.setPlayRate(animMultiplier, 'swim')
 
-    def exitCringe(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def exitCringe(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.getTransformed() or self.getTPose():
             self.stopTransformationAnim('cringe')
         else:
@@ -2211,7 +2254,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.playingAnim = 'neutral'
             self.setPlayRate(animMultiplier, 'swim')
 
-    def enterDive(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterDive(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('swim')
         if hasattr(self.getGeomNode(), 'setPos'):
             self.getGeomNode().setPos(0, 0, -2)
@@ -2227,7 +2272,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.tryShowDropShadow()
         self.nametag3d.setPos(0, 0, self.height + 0.5)
 
-    def enterSwimHold(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSwimHold(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.getGeomNode().setPos(0, 0, -2)
         self.nametag3d.setPos(0, -2, 1)
         self.pose('swim', 55)
@@ -2275,7 +2322,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.getGeomNode().setPos(0, 0, 0)
         self.nametag3d.setZ(1.0)
 
-    def enterOpenBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterOpenBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableAll(self, 'enterOpenBook')
         self.playingAnim = 'openBook'
         self.stopLookAround()
@@ -2314,7 +2363,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseAll(self, 'exitOpenBook')
         return
 
-    def enterReadBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterReadBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableBody(self, 'enterReadBook')
         self.playingAnim = 'readBook'
         self.stopLookAround()
@@ -2341,7 +2392,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.startLookAround()
         Emote.globalEmote.releaseBody(self, 'exitReadBook')
 
-    def enterCloseBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterCloseBook(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableAll(self, 'enterCloseBook')
         self.playingAnim = 'closeBook'
         if self.getTransformed() or self.getTPose():
@@ -2424,7 +2477,9 @@ class Toon(Avatar.Avatar, ToonHead):
     def stopQuestMap(self):
         pass
 
-    def enterTeleportOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterTeleportOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         name = self.name
         if hasattr(self, 'doId'):
             name += '-' + str(self.doId)
@@ -2455,7 +2510,9 @@ class Toon(Avatar.Avatar, ToonHead):
             callback(*extraArgs)
         self.setActiveShadow(0)
 
-    def finishTeleportOut(self, callback = None, extraArgs = []):
+    def finishTeleportOut(self, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         name = self.name
         if hasattr(self, 'doId'):
             name += '-' + str(self.doId)
@@ -2496,7 +2553,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.show()
         return
 
-    def enterTeleportedOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterTeleportedOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.setActiveShadow(0)
 
     def exitTeleportedOut(self):
@@ -2516,7 +2575,9 @@ class Toon(Avatar.Avatar, ToonHead):
                         autoFinish=autoFinishTrack)
         return ival
 
-    def enterDied(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterDied(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.ghostMode:
             if callback:
                 callback(*extraArgs)
@@ -2541,7 +2602,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.setActiveShadow(0)
         return
 
-    def finishDied(self, callback = None, extraArgs = []):
+    def finishDied(self, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.track != None:
             self.ignore(self.track.getName())
             self.track.finish()
@@ -2595,7 +2658,9 @@ class Toon(Avatar.Avatar, ToonHead):
             trackName = 'teleportIn'
         return Parallel(holeTrack, toonTrack, name=trackName)
 
-    def enterTeleportIn(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterTeleportIn(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.ghostMode or base.cr.episodeManager.episode:
             if callback:
                 callback(*extraArgs)
@@ -2631,7 +2696,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseAll(self, 'exitTeleportIn')
         return
 
-    def enterSitStart(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSitStart(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableBody(self)
         self.playingAnim = 'sit-start'
         if self.isLocal():
@@ -2650,7 +2717,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseBody(self)
         return
 
-    def enterSit(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSit(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableBody(self)
         self.playingAnim = 'sit'
         if self.getTransformed() or self.getTPose():
@@ -2663,7 +2732,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.playingAnim = 'neutral'
         Emote.globalEmote.releaseBody(self)
 
-    def enterSleep(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSleep(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.stopLookAround()
         transformationIndex = self.getActiveTransformationIndex()
         if transformationIndex == ToontownGlobals.TransformationCog:
@@ -2723,7 +2794,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.lerpLookAt(Point3(0, 1, 0), time=0.25)
         self.stop()
 
-    def enterPush(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterPush(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableBody(self)
         self.playingAnim = 'push'
         self.track = Sequence(ActorInterval(self, 'push'))
@@ -2739,7 +2812,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseBody(self)
         return
 
-    def enterEmote(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterEmote(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if len(extraArgs) > 0:
             emoteIndex = extraArgs[0]
         else:
@@ -2762,7 +2837,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.setActiveShadow(1)
         return
 
-    def doEmote(self, emoteIndex, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def doEmote(self, emoteIndex, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if not self.isLocal():
             if base.cr.avatarFriendsManager.checkIgnored(self.doId):
                 return
@@ -2799,7 +2876,9 @@ class Toon(Avatar.Avatar, ToonHead):
         taskMgr.remove(self.taskName('finishEmote'))
         return
 
-    def enterSquish(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterSquish(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableAll(self)
         audio3d = Audio3DManager.Audio3DManager(base.sfxManagerList[0], camera)
         audio3d.setDropOffFactor(0.1)
@@ -2843,7 +2922,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseAll(self)
         return
 
-    def enterFallDown(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterFallDown(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = 'fallDown'
         Emote.globalEmote.disableAll(self)
         if self.getTransformed() or self.getTPose():
@@ -4456,7 +4537,9 @@ class Toon(Avatar.Avatar, ToonHead):
         else:
             return None
 
-    def playCalcTransformedAnim(self, animName, extraArgs=[], play=False):
+    def playCalcTransformedAnim(self, animName, extraArgs = None, play=False):
+        if extraArgs is None:
+            extraArgs = []
         if self.getTransformed():
             self.playTransformationAnim(animName, extraArgs)
         else:
@@ -4466,7 +4549,9 @@ class Toon(Avatar.Avatar, ToonHead):
                 self.loop(animName)
 
     # TODO: Refactor this function. 
-    def playTransformationAnim(self, animName, extraArgs=[]):
+    def playTransformationAnim(self, animName, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if not animName:
             return
         if self.getTPose():
@@ -5430,7 +5515,9 @@ class Toon(Avatar.Avatar, ToonHead):
                           )
         track.append(mtrack)
 
-        def removeFeathers(toon = self, feathers = feathers):
+        def removeFeathers(toon = self, feathers = None):
+            if feathers is None:
+                feathers = feathers
             MovieUtil.removeProps(feathers)
             toon.featherModel = None
 
@@ -5454,7 +5541,9 @@ class Toon(Avatar.Avatar, ToonHead):
     def getCallPetIval(self):
         return ActorInterval(self, 'callPet')
 
-    def enterGolfPuttLoop(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfPuttLoop(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('loop-putt')
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('golf-putt')
@@ -5462,19 +5551,25 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitGolfPuttLoop(self):
         self.stop()
 
-    def enterGolfRotateLeft(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfRotateLeft(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('rotateL-putt')
 
     def exitGolfRotateLeft(self):
         self.stop()
 
-    def enterGolfRotateRight(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfRotateRight(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('rotateR-putt')
 
     def exitGolfRotateRight(self):
         self.stop()
 
-    def enterGolfPuttSwing(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfPuttSwing(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('swing-putt')
         if self.getTransformed() or self.getTPose():
             self.playTransformationAnim('golf-swing', [animMultiplier])
@@ -5482,19 +5577,25 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitGolfPuttSwing(self):
         self.stop()
 
-    def enterGolfGoodPutt(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfGoodPutt(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('good-putt', restart=0)
 
     def exitGolfGoodPutt(self):
         self.stop()
 
-    def enterGolfBadPutt(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterGolfBadPutt(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('badloop-putt', restart=0)
 
     def exitGolfBadPutt(self):
         self.stop()
 
-    def enterFlattened(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterFlattened(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         Emote.globalEmote.disableAll(self)
         sound = loader.loadSfx('phase_9/audio/sfx/toon_decompress.ogg')
         lerpTime = 0.1
@@ -5515,7 +5616,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseAll(self)
         return
 
-    def enterCogThiefRunning(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterCogThiefRunning(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.playingAnim = None
         self.playingRate = None
         self.standWalkRunReverse = (('neutral', 1.0),
@@ -5534,7 +5637,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.motion.exit()
         return
 
-    def enterScientistJealous(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterScientistJealous(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('scientistJealous')
         if hasattr(self, 'showScientistProp'):
             self.showScientistProp()
@@ -5542,25 +5647,33 @@ class Toon(Avatar.Avatar, ToonHead):
     def exitScientistJealous(self):
         self.stop()
 
-    def enterScientistEmcee(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterScientistEmcee(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('scientistEmcee')
 
     def exitScientistEmcee(self):
         self.stop()
 
-    def enterScientistWork(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterScientistWork(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('scientistWork')
 
     def exitScientistWork(self):
         self.stop()
 
-    def enterScientistLessWork(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterScientistLessWork(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('scientistWork', fromFrame=319, toFrame=619)
 
     def exitScientistLessWork(self):
         self.stop()
 
-    def enterScientistPlay(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterScientistPlay(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.loop('scientistGame')
         if hasattr(self, 'scientistPlay'):
             self.scientistPlay()
@@ -5610,7 +5723,9 @@ class Toon(Avatar.Avatar, ToonHead):
         track = Parallel(seq, name=trackName, autoFinish=autoFinishTrack)
         return track
 
-    def enterPortalOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterPortalOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         name = self.name
         if hasattr(self, 'doId'):
             name += '-' + str(self.doId)
@@ -5631,7 +5746,9 @@ class Toon(Avatar.Avatar, ToonHead):
         self.track.start(ts)
         self.setActiveShadow(0)
 
-    def finishPortalOut(self, callback = None, extraArgs = []):
+    def finishPortalOut(self, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         name = self.name
         if hasattr(self, 'doId'):
             name += '-' + str(self.doId)
@@ -5661,7 +5778,9 @@ class Toon(Avatar.Avatar, ToonHead):
             self.show()
         return
 
-    def enterPortaledOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterPortaledOut(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         self.setActiveShadow(0)
 
     def exitPortaledOut(self):
@@ -5696,7 +5815,9 @@ class Toon(Avatar.Avatar, ToonHead):
             seq.append(Func(portal.removeNode))
         return Parallel(seq, name=trackName)
 
-    def enterPortalIn(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterPortalIn(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         if self.ghostMode or self.getTransformationsIndex(ToontownGlobals.TransformationCog):
             if callback:
                 callback(*extraArgs)
@@ -5726,7 +5847,9 @@ class Toon(Avatar.Avatar, ToonHead):
         Emote.globalEmote.releaseAll(self, 'exitPortalIn')
         return
 
-    def enterPeriscope(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = []):
+    def enterPeriscope(self, animMultiplier = 1, ts = 0, callback = None, extraArgs = None):
+        if extraArgs is None:
+            extraArgs = []
         anim = 'periscope'
         self.loop(anim)
         self.setPlayRate(animMultiplier, anim)

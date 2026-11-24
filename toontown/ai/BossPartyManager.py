@@ -355,9 +355,9 @@ class BossPartyManager(DistributedMicroGame):
         pass
 
     def setCategory(self, category):
-        if category == ToontownGlobals.BossPartyCategoryMinigames:
-            base.localAvatar.setSystemMessage(0, 'This feature is not available in this beta.')
-            return
+        #if category == ToontownGlobals.BossPartyCategoryMinigames:
+        #    base.localAvatar.setSystemMessage(0, 'This feature is not available in this beta.')
+        #    return
 
         for cat, button in self.categoryButtons.items():
             if cat == category:
@@ -394,9 +394,9 @@ class BossPartyManager(DistributedMicroGame):
         OTPGUIUtils.Animations.staggeredPopUp(list(self.plannerGameButtons.values()))
 
     def setGame(self, game):
-        if game == ToontownGlobals.BossPartySellbotBossArena:
-            base.localAvatar.setSystemMessage(0, 'This feature is not available in this beta.')
-            return
+        #if game == ToontownGlobals.BossPartySellbotBossArena:
+        #    base.localAvatar.setSystemMessage(0, 'This feature is not available in this beta.')
+        #    return
         # Somehow the game we select isnt in theactive category, lets switch to the right catgeory
         if game not in ToontownGlobals.BossPartyCategories[BossPartyManager.ActiveCategory]:
             for category, modes in ToontownGlobals.BossPartyCategories.items():

@@ -267,6 +267,9 @@ class ToonBase(OTPBase.OTPBase):
         #        head = open('resources/.git/FETCH_HEAD').read(6)
         #        print(f"=== Development: Running REALMSGAME/RESOURCES branch '{branch}' @ {head} ===")
 
+        #loadPrcFileData('osd', 'on-screen-debug-enabled true')
+
+
     def setupTextProperties(self):
         tpm = TextPropertiesManager.getGlobalPtr()
         ToontownGlobals.setInterfaceFont(TTLocalizer.InterfaceFont)

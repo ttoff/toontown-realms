@@ -137,6 +137,7 @@ class ToontownLoader(Loader.Loader):
                 'master': base.sfxMgrMaster,
                 'dialog': base.sfxMgrDialog,
                 'environment': base.sfxMgrEnvironment,
+                'battle': base.sfxMgrBattle,
                 'streetprops': base.sfxMgrStreetProps,
                 'gui': base.sfxMgrGui
             }[manager]

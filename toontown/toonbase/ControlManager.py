@@ -50,6 +50,11 @@ class ControlManager(DirectObject):
             activeHotkeys.append(boundKey)
             self.accept(boundKey, self.hotkeyPressed, extraArgs = [key.getPressed(), boundKey, key])
             self.accept(f'{boundKey}-up', self.hotkeyPressed, extraArgs = [key.getReleased(), boundKey, key])
+
+            for modifier in ('control', 'alt', 'shift'):
+                if not self.getKeyInUse(f'{modifier}-{boundKey}'):
+                    self.accept(f'{modifier}-{boundKey}', self.hotkeyPressed, extraArgs = [key.getPressed(), boundKey, key])
+                    self.accept(f'{modifier}-{boundKey}-up', self.hotkeyPressed, extraArgs = [key.getReleased(), boundKey, key])
         self.disableChat = disableChat
         self.activeHotkeys = activeHotkeys
         if hasattr(base, 'localAvatar') and hasattr(base.localAvatar, 'chatMgr') and base.localAvatar.chatMgr:

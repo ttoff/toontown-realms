@@ -9,7 +9,7 @@ from panda3d.core import Vec3, CollisionTraverser, CollisionSegment, CollisionNo
 from otp.camera.CameraBase import CameraBase
 from otp.camera.CameraGlobals import *
 from otp.otpbase.PythonUtil import bound
-from toontown.toonbase import ClientSettings
+from toontown.toonbase import ClientSettings, HotkeySettings
 
 
 class CameraEditor(CameraBase):
@@ -20,20 +20,23 @@ class CameraEditor(CameraBase):
         super().__init__(avatar)
         self.__lastPosWrtRender: Optional[Vec3F] = None
         self.__lastHprWrtRender: Optional[Vec3F] = None
-        self.__cameraAttachPoint: NodePath = avatar.attachNewNode('__editorOrbitAttachPoint')
+        self.__cameraAttachPoint: NodePath = base.render.attachNewNode('__editorOrbitAttachPoint')
+        self.__zoom: float = -40
 
     def enterActive(self):
         super().enterActive()
         self.attachCamera()
         self.__acceptHotkeys()
-        self.addTask(self.__doCamUpdate, 'camUpdate')
-        self.avatar.controlManager.setStrafing(True)
+        self.addTask(self.__doCamUpdate, 'camUpdate', sort = 49)
+        if (mover := self.avatar.controlManager.get('walk')) is not None:
+            mover.setCameraLocked(True)
 
     def enterInactive(self):
         self.removeTask('camUpdate')
         self.__ignoreHotkeys()
         super().enterInactive()
-        self.avatar.controlManager.setStrafing(False)
+        if (mover := self.avatar.controlManager.get('walk')) is not None:
+            mover.setCameraLocked(False)
 
     def attachCamera(self):
         self.__cameraAttachPoint.setPos(0, 0, self.avatar.getHeight())
@@ -58,12 +61,6 @@ class CameraEditor(CameraBase):
             self.__cameraAttachPoint.setP(pitch)
             self.__cameraAttachPoint.setR(render, 0)
 
-        # set the toons' rotation to the cameras rotation
-        camPointH = self.__cameraAttachPoint.getH(render)
-        if abs(camPointH - self.avatar.getH(render)) > 0.01:
-            self.avatar.setH(render, camPointH)
-            # then set the camera's relative rotation back to 0
-            self.__cameraAttachPoint.setH(0)
         return task.cont
 
     def startMouseControl(self):
@@ -72,41 +69,43 @@ class CameraEditor(CameraBase):
     def stopMouseControl(self):
         super().stopMouseControl()
 
-    def __acceptHotkeys(self):
+    def __acceptHotkeys(self) -> None:
         self.accept('wheel_up', self.__handleWheelUp)
-        self.accept('page_up', self.__handleWheelUp)
+        self.accept(HotkeySettings.ZoomIn.getPressed(), self.__handleWheelUp)
         self.accept('wheel_down', self.__handleWheelDown)
-        self.accept('page_down', self.__handleWheelDown)
+        self.accept(HotkeySettings.ZoomOut.getPressed(), self.__handleWheelDown)
 
-    def __ignoreHotkeys(self):
+    def __ignoreHotkeys(self) -> None:
         self.ignore('wheel_up')
         self.ignore('wheel_down')
-        self.ignore('page_up')
-        self.ignore('page_down')
+        self.ignore(HotkeySettings.ZoomIn.getPressed())
+        self.ignore(HotkeySettings.ZoomOut.getPressed())
 
-    def __handleWheelUp(self):
-        self.__setZoom(1)
+    def __handleWheelUp(self) -> None:
+        self.__adjustZoom(1)
 
-    def __handleWheelDown(self):
-        self.__setZoom(-1)
+    def __handleWheelDown(self) -> None:
+        self.__adjustZoom(-1)
 
-    def adjustZoom(self, offset: int):
-        self.__setZoom(offset)
-
-    def __setZoom(self, offset: int):
+    def __adjustZoom(self, offset: float):
         """ Adjust the zoom level """
         y = CameraEditor.CameraOffset.y
         y = bound(y + offset, EDITOR_MIN_ZOOM, EDITOR_MAX_ZOOM)
         CameraEditor.CameraOffset.setY(y)
-        z = lerp(self.avatar.getHeight(), self.avatar.getHeight(), (-14 - y) / -12)
-        self.__cameraAttachPoint.setZ(z)
+        self.__zoom = y
+        self.__setZoom(self.__zoom)
+
+    def __setZoom(self, zoom: float):
+        z = lerp(self.avatar.getHeight(), self.avatar.getHeight(), (-14 - zoom) / -12)
+        self.__cameraAttachPoint.setZ(self.avatar, z)
 
     def __doCamUpdate(self, task):
         """ update camera """
         if hasattr(base, 'oobeMode') and base.oobeMode:
            return task.cont
-        if self.__lastPosWrtRender == base.camera.getPos(render) and self.__lastHprWrtRender == base.camera.getHpr(
-                render):
+        self.__cameraAttachPoint.setPos(self.avatar, Vec3(0, 0, lerp(self.avatar.getHeight(), self.avatar.getHeight(), (-14 - self.__zoom) / -12)))
+
+        if self.__lastPosWrtRender == base.camera.getPos(base.render) and self.__lastHprWrtRender == base.camera.getHpr(base.render):
             return task.cont
         base.camera.setPos(CameraEditor.CameraOffset.x, self.__getScaledDistance(CameraEditor.CameraOffset.y), 0)
         base.camera.setHpr(Vec3(0))
